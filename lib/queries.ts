@@ -1,8 +1,6 @@
-import type { SQLQueryBindings } from "bun:sqlite";
 import db from "./db";
 import type { Game, QueryParams, SortField, SortOrder } from "./types";
 
-type CountRow = { count: number };
 type YearRow = { release_year: number };
 
 const SORT_COLUMNS: Record<SortField, string> = {
@@ -16,10 +14,9 @@ const SORT_DIRS: Record<SortOrder, string> = {
   desc: "DESC",
 };
 
-export function queryGames(params: Partial<QueryParams>): {
-  games: Game[];
-  total: number;
-} {
+export async function queryGames(
+  params: Partial<QueryParams>
+): Promise<{ games: Game[]; total: number }> {
   const {
     q,
     platform,
@@ -31,7 +28,7 @@ export function queryGames(params: Partial<QueryParams>): {
   } = params;
 
   const conditions: string[] = [];
-  const args: SQLQueryBindings[] = [];
+  const args: (string | number)[] = [];
 
   if (q) {
     conditions.push("(LOWER(title) LIKE ? OR LOWER(developer) LIKE ?)");
@@ -59,22 +56,20 @@ export function queryGames(params: Partial<QueryParams>): {
   const col = SORT_COLUMNS[sort];
   const dir = SORT_DIRS[order];
 
-  const games = db
-    .query<Game, SQLQueryBindings[]>(`SELECT * FROM games ${where} ORDER BY ${col} ${dir}`)
-    .all(...args);
+  const [gamesResult, countResult] = await Promise.all([
+    db.execute({ sql: `SELECT * FROM games ${where} ORDER BY ${col} ${dir}`, args }),
+    db.execute({ sql: `SELECT COUNT(*) as count FROM games ${where}`, args }),
+  ]);
 
-  const countRow = db
-    .query<CountRow, SQLQueryBindings[]>(`SELECT COUNT(*) as count FROM games ${where}`)
-    .get(...args);
+  const games = gamesResult.rows as unknown as Game[];
+  const total = Number(countResult.rows[0]?.count ?? 0);
 
-  return { games, total: countRow?.count ?? 0 };
+  return { games, total };
 }
 
-export function queryYears(): number[] {
-  return db
-    .query<YearRow, []>(
-      "SELECT DISTINCT release_year FROM games ORDER BY release_year DESC"
-    )
-    .all()
-    .map((r) => r.release_year);
+export async function queryYears(): Promise<number[]> {
+  const result = await db.execute(
+    "SELECT DISTINCT release_year FROM games ORDER BY release_year DESC"
+  );
+  return (result.rows as unknown as YearRow[]).map((r) => r.release_year);
 }

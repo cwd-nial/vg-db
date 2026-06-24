@@ -44,7 +44,8 @@ bun run scripts/seed.ts --reset   # Drop and re-seed
 Create `.env.local` (gitignored):
 
 ```
-DATABASE_PATH=./games.db          # default
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your-token
 NEXT_PUBLIC_APP_TITLE=GameDB      # shown in header/title
 ```
 

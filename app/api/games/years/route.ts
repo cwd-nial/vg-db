@@ -1,5 +1,5 @@
 import { queryYears } from "@/lib/queries";
 
-export function GET(): Response {
-  return Response.json({ years: queryYears() });
+export async function GET(): Promise<Response> {
+  return Response.json({ years: await queryYears() });
 }

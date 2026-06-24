@@ -33,8 +33,10 @@ export default async function Page({ searchParams }: SearchParamsProps) {
     order: qp.order,
   };
 
-  const { games, total } = queryGames(qp);
-  const years = queryYears();
+  const [{ games, total }, years] = await Promise.all([
+    queryGames(qp),
+    queryYears(),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50">

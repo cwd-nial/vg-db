@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { QueryParamsSchema } from "@/lib/types";
 import { queryGames } from "@/lib/queries";
 
-export function GET(request: NextRequest): Response {
+export async function GET(request: NextRequest): Promise<Response> {
   const raw = Object.fromEntries(request.nextUrl.searchParams.entries());
   const result = QueryParamsSchema.safeParse(raw);
 
@@ -13,6 +13,6 @@ export function GET(request: NextRequest): Response {
     );
   }
 
-  const { games, total } = queryGames(result.data);
+  const { games, total } = await queryGames(result.data);
   return Response.json({ data: games, total });
 }
