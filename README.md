@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GameDB
 
-## Getting Started
+A video game catalog — think IMDb for games. Browse, search, and filter games across PS5, Xbox, and Switch. No login required.
 
-First, run the development server:
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Bun |
+| Framework | Next.js 16.2.9 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Validation | Zod v4 |
+| Database | SQLite via `bun:sqlite` |
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Install dependencies
+bun install
+
+# Seed the database
+bun run scripts/seed.ts
+
+# Start dev server
+bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+bun run dev                       # Dev server
+bun run build                     # Production build
+bun run start                     # Start production server
+bun run lint                      # ESLint
+bun run scripts/seed.ts           # Seed DB from data/games.json
+bun run scripts/seed.ts --reset   # Drop and re-seed
+```
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+Create `.env.local` (gitignored):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+DATABASE_PATH=./games.db          # default
+NEXT_PUBLIC_APP_TITLE=GameDB      # shown in header/title
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project structure
 
-## Deploy on Vercel
+```
+app/
+  page.tsx                # Main browse page
+  layout.tsx
+  api/games/
+    route.ts              # GET /api/games
+    years/route.ts        # GET /api/games/years
+components/
+  FilterBar.tsx           # Search, platform, score, year, sort controls
+  GameCard.tsx            # Individual game card with Metacritic badge
+  GameGrid.tsx            # Responsive 1→2→3→4 column grid
+lib/
+  db.ts                   # SQLite singleton (bun:sqlite)
+  queries.ts              # Prepared-statement query helpers
+  types.ts                # Shared TypeScript types
+scripts/
+  seed.ts                 # JSON → SQLite seeder
+data/
+  games.json              # Seed data
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### `GET /api/games`
+
+| Param | Type | Description |
+|---|---|---|
+| `q` | string | Case-insensitive match on title + developer |
+| `platform` | `PS5` \| `Xbox` \| `Switch` | Exact match |
+| `metacritic_min` | number | Min score (inclusive) |
+| `metacritic_max` | number | Max score (inclusive) |
+| `release_year` | number | Exact year |
+| `sort` | `title` \| `release_year` \| `metacritic_score` | Sort field |
+| `order` | `asc` \| `desc` | Sort direction |
+
+Response: `{ data: Game[], total: number }`
+
+### `GET /api/games/years`
+
+Returns distinct release years in descending order.
+
+Response: `{ years: number[] }`
+
+## Data model
+
+```ts
+interface Game {
+  id: number;
+  title: string;
+  developer: string;
+  platform: "PS5" | "Xbox" | "Switch";
+  description: string;
+  metacritic_score: number | null;  // 0–100
+  metacritic_url: string | null;
+  release_year: number;
+}
+```
+
+Games are unique per `(title, platform)`. To add games, edit `data/games.json` and re-seed.
+
+## Out of scope (v1)
+
+Auth, user reviews, cover art, pagination, wishlist tracking, and UI-based game management are all intentionally excluded.
