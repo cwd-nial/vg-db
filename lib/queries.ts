@@ -1,4 +1,4 @@
-import db from "./db";
+import { getDb } from "./db";
 import type { Game, QueryParams, SortField, SortOrder } from "./types";
 
 type YearRow = { release_year: number };
@@ -57,8 +57,8 @@ export async function queryGames(
   const dir = SORT_DIRS[order];
 
   const [gamesResult, countResult] = await Promise.all([
-    db.execute({ sql: `SELECT * FROM games ${where} ORDER BY ${col} ${dir}`, args }),
-    db.execute({ sql: `SELECT COUNT(*) as count FROM games ${where}`, args }),
+    getDb().execute({ sql: `SELECT * FROM games ${where} ORDER BY ${col} ${dir}`, args }),
+    getDb().execute({ sql: `SELECT COUNT(*) as count FROM games ${where}`, args }),
   ]);
 
   const games = gamesResult.rows as unknown as Game[];
@@ -68,7 +68,7 @@ export async function queryGames(
 }
 
 export async function queryYears(): Promise<number[]> {
-  const result = await db.execute(
+  const result = await getDb().execute(
     "SELECT DISTINCT release_year FROM games ORDER BY release_year DESC"
   );
   return (result.rows as unknown as YearRow[]).map((r) => r.release_year);

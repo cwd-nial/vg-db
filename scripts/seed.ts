@@ -1,4 +1,5 @@
-import db from "../lib/db";
+import { getDb } from "../lib/db";
+const db = getDb();
 
 type SeedGame = {
   title: string;
