@@ -61,7 +61,16 @@ export async function queryGames(
     getDb().execute({ sql: `SELECT COUNT(*) as count FROM games ${where}`, args }),
   ]);
 
-  const games = gamesResult.rows as unknown as Game[];
+  const games = gamesResult.rows.map((r) => ({
+    id: Number(r.id),
+    title: r.title as string,
+    developer: r.developer as string,
+    platform: r.platform as Game["platform"],
+    description: r.description as string,
+    metacritic_score: r.metacritic_score != null ? Number(r.metacritic_score) : null,
+    metacritic_url: r.metacritic_url as string | null,
+    release_year: Number(r.release_year),
+  }));
   const total = Number(countResult.rows[0]?.count ?? 0);
 
   return { games, total };
